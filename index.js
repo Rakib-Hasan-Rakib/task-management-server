@@ -1,6 +1,6 @@
 const express = require('express')
 const cors = require('cors')
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const port = process.env.PORT || 5000;
 const app = express()
@@ -25,7 +25,70 @@ const client = new MongoClient(uri, {
 
 async function run() {
     try {
-        await client.connect();
+        // await client.connect();
+
+        const taskCollection = client.db('taskManagementDB').collection('allTask')
+
+        // add task from client side
+        app.post('/addedtask', async (req, res) => {
+            const task = req.body;
+            const result = await taskCollection.insertOne(task)
+            res.send(result)
+        })
+
+        // get task from database and send it to the client
+        app.get('/alltask', async (req, res) => {
+            const result = await taskCollection.find().toArray()
+            res.send(result)
+        })
+        // get individual task by id
+        app.get('/task/:id', async (req, res) => {
+            const id = new ObjectId(req.params.id)
+            const query = { _id: id }
+            const result = await taskCollection.findOne(query)
+            res.send(result)
+        })
+
+        // update status from client side
+        app.patch('/statusUpdate/:id', async (req, res) => {
+            const id = new ObjectId(req.params.id)
+            const query = { _id: id }
+            const options = { upsert: true };
+            const updatedStatus = {
+                $set: {
+                    status: 'completed'
+                },
+            };
+            const result = await taskCollection.updateOne(query, updatedStatus, options);
+            res.send(result)
+        })
+        // update task
+        app.put('/updatedTask/:id', async (req, res) => {
+            const id = new ObjectId(req.params.id)
+            const query = { _id: id }
+            const updatedTask = req.body
+            const options = { upsert: true };
+            const updatedStatus = {
+                $set: {
+                    ...updatedTask
+                },
+            };
+            const result = await taskCollection.updateOne(query, updatedStatus, options);
+            res.send(result)
+        })
+        
+
+        // delete task from client side
+        app.delete('/deletedTask/:id', async (req, res) => {
+            const id = new ObjectId(req.params.id)
+            const query = { _id: id }
+            const result = await taskCollection.deleteOne(query)
+            res.send(result)
+        })
+
+
+
+
 
 
 
